@@ -1,31 +1,71 @@
 ﻿@{
-    ViewBag.Title = "Home Page";
+    ViewBag.Title = "Vasga Chat";
 }
 
-<div class="jumbotron">
-    <h1>ASP.NET</h1>
-    <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS and JavaScript.</p>
-    <p><a href="https://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a></p>
+<br />
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12">
+            <input type="text" class="form-control" id="message" />
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-lg-12">
+            <input type="text" class="btn btn-success" id="sendMessage" value="Enviar" />
+        </div>
+    </div>
+    <h3>Mensajes del chat</h3>
+    <div class="row">
+        <ul id="discussion"></ul>
+    </div>
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <h2>Getting started</h2>
-        <p>
-            ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that
-            enables a clean separation of concerns and gives you full control over markup
-            for enjoyable, agile development.
-        </p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301865">Learn more &raquo;</a></p>
-    </div>
-    <div class="col-md-4">
-        <h2>Get more libraries</h2>
-        <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301866">Learn more &raquo;</a></p>
-    </div>
-    <div class="col-md-4">
-        <h2>Web Hosting</h2>
-        <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301867">Learn more &raquo;</a></p>
-    </div>
-</div>
+<input type="hidden" id="displayName" />
+
+
+@section scripts{
+    <script src="~/Scripts/jquery.signalR-2.4.3.js"></script>
+
+    @*Library which loads in the time of compilation. And the hub functions are prepared 
+        to be executed in JS for html clients*@
+    <script src="~/signalr/hubs"></script>
+
+    @*javascript function*@
+    <script type="text/javascript">
+        $(function () {
+            var chat = $.connection.chatHub;
+
+            /*When someone sends -> Everyone receives it*/
+            chat.client.sendChat = function (name, message) {
+                var divName = $("<div/>").text(name).html();
+                var divMessage = $("<div/>").text(message).html();
+
+                $("#discussion").append("<li><strong>" + divName + ":<strong> " + divMessage + "</li>");
+            };
+
+            /*When someone enters for the first time*/
+            var nameOwner = prompt("¿Cuál es tu nombre? ", "");
+            $("#displayName").val(nameOwner);
+
+            /*Focus on the message box*/
+            $("#message").focus();
+
+            /*If the connection fails it will initialize the connection*/
+            $.connection.hub.start().done(function () {
+                /*To be sent by clicking on the button*/
+                $("#sendMessage").click(function () {
+
+                    var nameOwner = $("#displayName").val();
+                    var messageText = $("#message").val();
+
+                    /*Sent to the backend (function is called in ChatHub.cs)*/
+                    chat.server.send(nameOwner, messageText);
+
+                    /*Clear text box after sending message*/
+                    $("#message").val("").focus();
+                })
+            })
+        })
+    </script>
+}
